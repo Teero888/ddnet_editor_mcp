@@ -3684,7 +3684,7 @@ void CEditor::RenderMenubar(CUIRect MenuBar)
 	CUIRect McpButton;
 	static int s_McpButton;
 	MenuBar.VSplitLeft(40.0f, &McpButton, &MenuBar);
-	if(DoButton_Ex(&s_McpButton, "MCP", m_pMcpServer && m_pMcpServer->Running(), &McpButton, BUTTONFLAG_LEFT, "Connect an AI agent to this editor.", IGraphics::CORNER_T, EditorFontSizes::MENU, TEXTALIGN_ML))
+	if(DoButton_Ex(&s_McpButton, "MCP", m_pMcpServer && m_pMcpServer->Running(), &McpButton, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_T, EditorFontSizes::MENU, TEXTALIGN_ML))
 	{
 		static SPopupMenuId s_PopupMcpId;
 		Ui()->DoPopupMenu(&s_PopupMcpId, McpButton.x, McpButton.y + McpButton.h - 1.0f, 400.0f, 220.0f, this, PopupMcp, PopupProperties);

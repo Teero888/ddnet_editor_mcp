@@ -205,9 +205,7 @@ CUi::EPopupMenuFunctionResult CEditor::PopupMcp(void *pContext, CUIRect View, bo
 	View.Margin(6.0f, &View);
 	CUIRect Row, Label, Field;
 	View.HSplitTop(22.0f, &Row, &View);
-	pEditor->Ui()->DoLabel(&Row, "AI editor connection", 14.0f, TEXTALIGN_ML);
-	View.HSplitTop(22.0f, &Row, &View);
-	pEditor->Ui()->DoLabel(&Row, Server.Running() ? "MCP server is running on this computer." : "Start the server, then connect your AI agent to its URL.", 10.0f, TEXTALIGN_ML);
+	pEditor->Ui()->DoLabel(&Row, Server.Running() ? "MCP server is running on this computer." : "Start the server.", 10.0f, TEXTALIGN_ML);
 	View.HSplitTop(22.0f, &Row, &View);
 	Row.VSplitLeft(45.0f, &Label, &Field);
 	pEditor->Ui()->DoLabel(&Label, "Port", 11.0f, TEXTALIGN_ML);
