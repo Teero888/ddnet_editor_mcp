@@ -120,6 +120,7 @@ void CMapView::RenderEditorMap()
 
 void CMapView::Render(CUIRect View)
 {
+	m_LastViewport = View;
 	// render all good stuff
 	if(!Editor()->m_ShowPicker)
 	{

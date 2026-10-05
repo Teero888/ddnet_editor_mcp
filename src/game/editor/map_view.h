@@ -50,6 +50,7 @@ public:
 	void RenderGroupBorder();
 	void RenderEditorMap();
 	void Render(CUIRect View);
+	CUIRect LastViewport() const { return m_LastViewport; }
 
 	void UpdateMouseWorld();
 	void ResetMouseDeltaWorld();
@@ -88,6 +89,7 @@ public:
 	const CMapGrid *MapGrid() const;
 
 private:
+	CUIRect m_LastViewport{};
 	CProofMode m_ProofMode;
 	CMapGrid m_MapGrid;
 };

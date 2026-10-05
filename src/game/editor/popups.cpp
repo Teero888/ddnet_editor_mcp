@@ -3,6 +3,7 @@
 
 #include "editor.h"
 #include "editor_actions.h"
+#include "mcp_server.h"
 
 #include <base/color.h>
 
@@ -193,6 +194,80 @@ static int EntitiesListdirCallback(const char *pName, int IsDir, int StorageType
 	}
 
 	return 0;
+}
+
+CUi::EPopupMenuFunctionResult CEditor::PopupMcp(void *pContext, CUIRect View, bool Active)
+{
+	CEditor *pEditor = static_cast<CEditor *>(pContext);
+	if(!pEditor->m_pMcpServer)
+		pEditor->m_pMcpServer = std::make_shared<CEditorMcpServer>();
+	auto &Server = *pEditor->m_pMcpServer;
+	View.Margin(6.0f, &View);
+	CUIRect Row, Label, Field;
+	View.HSplitTop(22.0f, &Row, &View);
+	pEditor->Ui()->DoLabel(&Row, "AI editor connection", 14.0f, TEXTALIGN_ML);
+	View.HSplitTop(22.0f, &Row, &View);
+	pEditor->Ui()->DoLabel(&Row, Server.Running() ? "MCP server is running on this computer." : "Start the server, then connect your AI agent to its URL.", 10.0f, TEXTALIGN_ML);
+	View.HSplitTop(22.0f, &Row, &View);
+	Row.VSplitLeft(45.0f, &Label, &Field);
+	pEditor->Ui()->DoLabel(&Label, "Port", 11.0f, TEXTALIGN_ML);
+	Field.VSplitLeft(80.0f, &Field, nullptr);
+	static CLineInputNumber s_Port;
+	static int s_LastPort = -1;
+	if(s_LastPort != g_Config.m_ClEditorMcpPort)
+	{
+		s_Port.SetInteger(g_Config.m_ClEditorMcpPort);
+		s_LastPort = g_Config.m_ClEditorMcpPort;
+	}
+	if(Server.Running())
+	{
+		char aPort[16];
+		str_format(aPort, sizeof(aPort), "%d", Server.Port());
+		pEditor->Ui()->DoLabel(&Field, aPort, 11.0f, TEXTALIGN_ML);
+	}
+	else
+		pEditor->DoEditBox(&s_Port, &Field, 11.0f, IGraphics::CORNER_ALL, "Choose the TCP port for your agent's MCP connection.");
+	View.HSplitTop(5.0f, nullptr, &View);
+	View.HSplitTop(22.0f, &Row, &View);
+	Row.VSplitLeft(110.0f, &Field, nullptr);
+	static int s_Toggle;
+	if(pEditor->DoButton_Editor(&s_Toggle, Server.Running() ? "Stop MCP server" : "Start MCP server", 0, &Field, BUTTONFLAG_LEFT, "Starting the server allows connected agents to call editor tools. It does not edit the map."))
+	{
+		if(Server.Running())
+			Server.Stop();
+		else if(Server.Start(s_Port.GetInteger()))
+		{
+			g_Config.m_ClEditorMcpPort = Server.Port();
+			s_LastPort = g_Config.m_ClEditorMcpPort;
+		}
+	}
+	View.HSplitTop(8.0f, nullptr, &View);
+	View.HSplitTop(20.0f, &Row, &View);
+	char aUrl[96];
+	str_format(aUrl, sizeof(aUrl), "http://127.0.0.1:%d/mcp", Server.Running() ? Server.Port() : g_Config.m_ClEditorMcpPort);
+	pEditor->Ui()->DoLabel(&Row, aUrl, 11.0f, TEXTALIGN_ML);
+	View.HSplitTop(22.0f, &Row, &View);
+	CUIRect CopyUrl, CopyConfig;
+	Row.VSplitLeft(100.0f, &CopyUrl, &Row);
+	Row.VSplitLeft(6.0f, nullptr, &Row);
+	Row.VSplitLeft(140.0f, &CopyConfig, nullptr);
+	static int s_CopyUrl, s_CopyConfig;
+	if(pEditor->DoButton_Editor(&s_CopyUrl, "Copy URL", 0, &CopyUrl, BUTTONFLAG_LEFT, "Paste this URL into your agent's HTTP MCP connection settings."))
+		pEditor->Input()->SetClipboardText(aUrl);
+	if(pEditor->DoButton_Editor(&s_CopyConfig, "Copy MCP configuration", 0, &CopyConfig, BUTTONFLAG_LEFT, "Copy a JSON configuration for MCP clients that use mcpServers."))
+	{
+		char aConfig[256];
+		str_format(aConfig, sizeof(aConfig), "{\"mcpServers\":{\"ddnet-editor\":{\"url\":\"%s\"}}}", aUrl);
+		pEditor->Input()->SetClipboardText(aConfig);
+	}
+	View.HSplitTop(6.0f, nullptr, &View);
+	View.HSplitTop(18.0f, &Row, &View);
+	char aStatus[128];
+	str_format(aStatus, sizeof(aStatus), "%u MCP requests received. Keep the editor open.", Server.RequestCount());
+	pEditor->Ui()->DoLabel(&Row, Server.Error().empty() ? aStatus : Server.Error().c_str(), 10.0f, TEXTALIGN_ML);
+	View.HSplitTop(18.0f, &Row, &View);
+	pEditor->Ui()->DoLabel(&Row, "Transport: Streamable HTTP. Stops when you leave the editor.", 10.0f, TEXTALIGN_ML);
+	return CUi::POPUP_KEEP_OPEN;
 }
 
 CUi::EPopupMenuFunctionResult CEditor::PopupMenuSettings(void *pContext, CUIRect View, bool Active)

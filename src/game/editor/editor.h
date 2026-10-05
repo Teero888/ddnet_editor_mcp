@@ -152,9 +152,12 @@ public:
 	class CConfig *Config() const { return m_pConfig; }
 	class IEngine *Engine() const { return m_pEngine; }
 	class IGraphics *Graphics() const { return m_pGraphics; }
+	class IEngineGraphics *EngineGraphics() { return Kernel()->RequestInterface<IEngineGraphics>(); }
 	class ISound *Sound() const { return m_pSound; }
 	class ITextRender *TextRender() const { return m_pTextRender; }
 	class IStorage *Storage() const { return m_pStorage; }
+	class IConsole *Console();
+	std::shared_ptr<class CEditorMcpServer> m_pMcpServer;
 	CUi *Ui() { return &m_UI; }
 	CRenderMap *RenderMap() { return &m_RenderMap; }
 
@@ -282,6 +285,8 @@ public:
 	float m_LastAutosaveUpdateTime = -1.0f;
 	void HandleAutosave();
 	std::deque<std::shared_ptr<CDataFileWriterFinishJob>> m_WriterFinishJobs;
+	// Completed opt-in automation saves: filename -> asynchronous error (empty on success).
+	std::map<std::string, std::string> m_AutomationSaveResults;
 	void HandleWriterFinishJobs();
 	bool IsSaving(const char *pFilename) const;
 	void UpdateMapDisplayNames();
@@ -299,6 +304,10 @@ public:
 	void Reset();
 	void AddDefaultMap();
 	void CloseMap(size_t Index, bool Confirm);
+	size_t MapCount() const { return m_vpMaps.size(); }
+	size_t SelectedMapIndex() const { return m_SelectedMap; }
+	const CEditorMap *MapAt(size_t Index) const { return m_vpMaps.at(Index).get(); }
+	void SelectMap(size_t Index);
 	bool Save(const char *pFilename) override;
 	bool Load(const char *pFilename, int StorageType) override;
 	bool HandleMapDrop(const char *pFilename, int StorageType) override;
@@ -479,6 +488,7 @@ public:
 
 	static CUi::EPopupMenuFunctionResult PopupMenuFile(void *pContext, CUIRect View, bool Active);
 	static CUi::EPopupMenuFunctionResult PopupMenuTools(void *pContext, CUIRect View, bool Active);
+	static CUi::EPopupMenuFunctionResult PopupMcp(void *pContext, CUIRect View, bool Active);
 	static CUi::EPopupMenuFunctionResult PopupMenuSettings(void *pContext, CUIRect View, bool Active);
 	class CPopupMapTab : public SPopupMenuId
 	{

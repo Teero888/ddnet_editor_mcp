@@ -2802,6 +2802,8 @@ if(CLIENT)
     # tidy-alphabetical-start
     auto_map.cpp
     auto_map.h
+    automation.cpp
+    automation.h
     component.cpp
     component.h
     editor.cpp
@@ -2871,6 +2873,14 @@ if(CLIENT)
     mapitems/map_io.cpp
     mapitems/sound.cpp
     mapitems/sound.h
+    mcp.cpp
+    mcp.h
+    mcp_protocol.cpp
+    mcp_protocol.h
+    mcp_server.cpp
+    mcp_server.h
+    mcp_tools.cpp
+    mcp_tools.h
     popups.cpp
     prompt.cpp
     prompt.h
@@ -3441,6 +3451,26 @@ add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/src/generated/checksum.cpp
 # TESTS
 ########################################################################
 
+# Test the native editor HTTP transport without starting a DDNet client.
+if(CLIENT AND GTEST_FOUND)
+  add_executable(editor-mcp-tests EXCLUDE_FROM_ALL
+    ${DEPS}
+    src/test/test.cpp
+    src/test/editor_mcp_transport_test.cpp
+    src/game/editor/mcp_server.cpp
+    src/game/editor/mcp_protocol.cpp
+    src/game/editor/mcp_tools.cpp
+    $<TARGET_OBJECTS:engine-shared>
+    $<TARGET_OBJECTS:game-shared>
+    $<TARGET_OBJECTS:rust-bridge-shared>
+  )
+  target_link_libraries(editor-mcp-tests ${GTEST_LIBRARIES} ${LIBS_CLIENT})
+  target_include_directories(editor-mcp-tests PRIVATE src "${PROJECT_BINARY_DIR}/src")
+  target_include_directories(editor-mcp-tests SYSTEM PRIVATE ${GTEST_INCLUDE_DIRS})
+  list(APPEND TARGETS_OWN editor-mcp-tests)
+  list(APPEND TARGETS_LINK editor-mcp-tests)
+endif()
+
 if((GTEST_FOUND OR DOWNLOAD_GTEST) AND SERVER)
   set_src(TESTS GLOB src/test
     # tidy-alphabetical-start
@@ -3454,6 +3484,7 @@ if((GTEST_FOUND OR DOWNLOAD_GTEST) AND SERVER)
     csv_test.cpp
     datafile_test.cpp
     dbg_test.cpp
+    editor_mcp_transport_test.cpp
     editor_test.cpp
     fs_test.cpp
     gameworld_test.cpp
@@ -3511,6 +3542,12 @@ if((GTEST_FOUND OR DOWNLOAD_GTEST) AND SERVER)
     src/engine/client/sqlite.cpp
     src/game/client/components/censor.cpp
     src/game/client/components/censor.h
+    src/game/editor/mcp_protocol.cpp
+    src/game/editor/mcp_protocol.h
+    src/game/editor/mcp_server.cpp
+    src/game/editor/mcp_server.h
+    src/game/editor/mcp_tools.cpp
+    src/game/editor/mcp_tools.h
     # tidy-alphabetical-end
   )
 

@@ -28,6 +28,7 @@
 #include <vector>
 
 class CEditor;
+class CEditorAutomationState;
 class CEditorImage;
 class CEditorSound;
 class CLayerFront;
@@ -126,6 +127,9 @@ public:
 	};
 	CMapInfo m_MapInfo;
 	CMapInfo m_MapInfoTmp;
+
+	// In-memory automation checkpoints, scoped to this map tab.
+	std::shared_ptr<CEditorAutomationState> m_pAutomationState;
 
 	// Undo/Redo
 	CEditorHistory m_EditorHistory;

@@ -703,7 +703,8 @@ void CGraphics_Threaded::ScreenshotDirect(bool *pSwapped)
 	if(!m_DoScreenshot)
 		return;
 	m_DoScreenshot = false;
-	if(!WindowActive())
+	// Input focus is not required: the backends read back the frame that was just rendered.
+	if(!WindowOpen())
 		return;
 
 	CImageInfo Image;

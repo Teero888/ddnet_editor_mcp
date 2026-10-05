@@ -5,6 +5,8 @@
 
 #include "auto_map.h"
 #include "editor_actions.h"
+#include "mcp.h"
+#include "mcp_server.h"
 
 #include <base/color.h>
 #include <base/dbg.h>
@@ -17,6 +19,7 @@
 
 #include <engine/client.h>
 #include <engine/client/keyboard.h>
+#include <engine/console.h>
 #include <engine/engine.h>
 #include <engine/font_icons.h>
 #include <engine/gfx/image_loader.h>
@@ -3677,6 +3680,16 @@ void CEditor::RenderMenubar(CUIRect MenuBar)
 		Ui()->DoPopupMenu(&s_PopupMenuSettingsId, SettingsButton.x, SettingsButton.y + SettingsButton.h - 1.0f, 280.0f, 148.0f, this, PopupMenuSettings, PopupProperties);
 	}
 
+	MenuBar.VSplitLeft(5.0f, nullptr, &MenuBar);
+	CUIRect McpButton;
+	static int s_McpButton;
+	MenuBar.VSplitLeft(40.0f, &McpButton, &MenuBar);
+	if(DoButton_Ex(&s_McpButton, "MCP", m_pMcpServer && m_pMcpServer->Running(), &McpButton, BUTTONFLAG_LEFT, "Connect an AI agent to this editor.", IGraphics::CORNER_T, EditorFontSizes::MENU, TEXTALIGN_ML))
+	{
+		static SPopupMenuId s_PopupMcpId;
+		Ui()->DoPopupMenu(&s_PopupMcpId, McpButton.x, McpButton.y + McpButton.h - 1.0f, 400.0f, 220.0f, this, PopupMcp, PopupProperties);
+	}
+
 	CUIRect Info, Help, Close;
 	MenuBar.VSplitLeft(5.0f, nullptr, &MenuBar);
 	MenuBar.VSplitRight(15.0f, &MenuBar, &Close);
@@ -4492,6 +4505,19 @@ void CEditor::AddDefaultMap()
 	UpdateMapDisplayNames();
 }
 
+IConsole *CEditor::Console()
+{
+	return Kernel()->RequestInterface<IConsole>();
+}
+
+void CEditor::SelectMap(size_t Index)
+{
+	dbg_assert(Index < m_vpMaps.size(), "Invalid map index");
+	Reset();
+	m_SelectedMap = Index;
+	m_MapTabsRevealSelected = true;
+}
+
 void CEditor::CloseMap(size_t Index, bool Confirm)
 {
 	if(IsSaving(m_vpMaps[Index]->m_aFilename))
@@ -4732,8 +4758,14 @@ void CEditor::HandleWriterFinishJobs()
 	m_WriterFinishJobs.pop_front();
 
 	const char *pErrorMessage = pJob->ErrorMessage();
+	auto AutomationSave = m_AutomationSaveResults.find(pJob->RealFilename());
+	if(AutomationSave != m_AutomationSaveResults.end())
+		AutomationSave->second = pErrorMessage;
 	if(pErrorMessage[0] != '\0')
 	{
+		for(const auto &pMap : m_vpMaps)
+			if(str_comp(pMap->m_aFilename, pJob->RealFilename()) == 0)
+				pMap->m_Modified = true;
 		ShowFileDialogError("%s", pErrorMessage);
 		return;
 	}
@@ -4847,6 +4879,7 @@ void CEditor::OnUpdate()
 	LayerSelector()->UpdateHoveredTiles();
 	HandleAutosave();
 	HandleWriterFinishJobs();
+	UpdateEditorMcp(this);
 
 	for(CEditorComponent &Component : m_vComponents)
 		Component.OnUpdate();
@@ -4937,6 +4970,8 @@ void CEditor::OnWindowResize()
 
 void CEditor::OnClose()
 {
+	if(m_pMcpServer)
+		m_pMcpServer->Stop();
 	m_ColorPipetteActive = false;
 
 	if(m_ToolbarPreviewSound >= 0 && Sound()->IsPlaying(m_ToolbarPreviewSound))
